@@ -1,0 +1,40 @@
+ManifestFileVersion: 0
+CRC: 211324746
+AssetBundleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: deck1
+      Dependencies: {}
+    Info_1:
+      Name: deck2
+      Dependencies: {}
+    Info_2:
+      Name: deck3
+      Dependencies: {}
+    Info_3:
+      Name: deck4
+      Dependencies: {}
+    Info_4:
+      Name: deck5
+      Dependencies: {}
+    Info_5:
+      Name: deck6
+      Dependencies: {}
+    Info_6:
+      Name: deck1thumb
+      Dependencies: {}
+    Info_7:
+      Name: deck2thumb
+      Dependencies: {}
+    Info_8:
+      Name: deck3thumb
+      Dependencies: {}
+    Info_9:
+      Name: deck4thumb
+      Dependencies: {}
+    Info_10:
+      Name: deck5thumb
+      Dependencies: {}
+    Info_11:
+      Name: deck6thumb
+      Dependencies: {}

@@ -11,4 +11,16 @@ public static class ExtensionMethods {
 			list[n] = tmp;
 		}
 	}
+
+	public static Vector3 TransformPointTo(this Transform from, Transform to, Vector3 point) {
+		var world = from.TransformPoint(point);
+		var localInTo = to.InverseTransformPoint(world);
+		return localInTo;
+	}
+
+	public static void ClearChildren(this Transform transform) {
+		foreach (Transform child in transform) {
+			GameObject.Destroy(child.gameObject);
+		}
+	}
 }

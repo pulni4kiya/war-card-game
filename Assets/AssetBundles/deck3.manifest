@@ -1,0 +1,70 @@
+ManifestFileVersion: 0
+CRC: 995916315
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: a2b6293e0d5e235dca4ff14ad0231d77
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: c90fc19e2679e5295d10bd00f33cb4c3
+HashAppended: 0
+ClassTypes:
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Images/Decks/Deck3/Spades_6.png
+- Assets/Images/Decks/Deck3/Hearts_9.png
+- Assets/Images/Decks/Deck3/Diamonds_14.png
+- Assets/Images/Decks/Deck3/Hearts_12.png
+- Assets/Images/Decks/Deck3/Hearts_2.png
+- Assets/Images/Decks/Deck3/Spades_3.png
+- Assets/Images/Decks/Deck3/Clubs_14.png
+- Assets/Images/Decks/Deck3/Hearts_6.png
+- Assets/Images/Decks/Deck3/Hearts_4.png
+- Assets/Images/Decks/Deck3/Clubs_10.png
+- Assets/Images/Decks/Deck3/Spades_5.png
+- Assets/Images/Decks/Deck3/Clubs_6.png
+- Assets/Images/Decks/Deck3/Hearts_7.png
+- Assets/Images/Decks/Deck3/Diamonds_8.png
+- Assets/Images/Decks/Deck3/Clubs_8.png
+- Assets/Images/Decks/Deck3/Spades_8.png
+- Assets/Images/Decks/Deck3/Spades_10.png
+- Assets/Images/Decks/Deck3/Diamonds_10.png
+- Assets/Images/Decks/Deck3/Spades_15.png
+- Assets/Images/Decks/Deck3/Diamonds_7.png
+- Assets/Images/Decks/Deck3/Diamonds_6.png
+- Assets/Images/Decks/Deck3/Spades_14.png
+- Assets/Images/Decks/Deck3/Hearts_8.png
+- Assets/Images/Decks/Deck3/Diamonds_12.png
+- Assets/Images/Decks/Deck3/Spades_13.png
+- Assets/Images/Decks/Deck3/Spades_7.png
+- Assets/Images/Decks/Deck3/Spades_9.png
+- Assets/Images/Decks/Deck3/Clubs_15.png
+- Assets/Images/Decks/Deck3/Spades_12.png
+- Assets/Images/Decks/Deck3/Diamonds_13.png
+- Assets/Images/Decks/Deck3/Spades_4.png
+- Assets/Images/Decks/Deck3/Diamonds_5.png
+- Assets/Images/Decks/Deck3/Hearts_10.png
+- Assets/Images/Decks/Deck3/Clubs_5.png
+- Assets/Images/Decks/Deck3/Diamonds_15.png
+- Assets/Images/Decks/Deck3/Diamonds_9.png
+- Assets/Images/Decks/Deck3/Clubs_7.png
+- Assets/Images/Decks/Deck3/Diamonds_3.png
+- Assets/Images/Decks/Deck3/Hearts_5.png
+- Assets/Images/Decks/Deck3/Hearts_15.png
+- Assets/Images/Decks/Deck3/Clubs_3.png
+- Assets/Images/Decks/Deck3/Clubs_13.png
+- Assets/Images/Decks/Deck3/Hearts_3.png
+- Assets/Images/Decks/Deck3/Diamonds_4.png
+- Assets/Images/Decks/Deck3/Clubs_4.png
+- Assets/Images/Decks/Deck3/Spades_2.png
+- Assets/Images/Decks/Deck3/Clubs_2.png
+- Assets/Images/Decks/Deck3/Clubs_12.png
+- Assets/Images/Decks/Deck3/Diamonds_2.png
+- Assets/Images/Decks/Deck3/Hearts_13.png
+- Assets/Images/Decks/Deck3/Clubs_9.png
+- Assets/Images/Decks/Deck3/Hearts_14.png
+Dependencies: []

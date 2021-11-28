@@ -9,13 +9,17 @@ public class GameManager : MonoBehaviour {
     private static readonly Quaternion FaceUp = Quaternion.identity;
     private static readonly Quaternion FaceDown = Quaternion.Euler(0f, 180f, 0f);
 
+    public int playerCount = 2;
     public Card cardPrefab;
+    public PlayerPanel playerPanelPrefab;
+    public RectTransform playArea;
     public Button nextRoundButton;
     public float cardAnimationTimeBase;
     public Slider animationSpeedSlider;
     public Toggle autoPlayToggle;
     public Slider waitTimeSlider;
     public Camera mainCamera;
+    public GameObject loadingAssetsPanel;
     public List<CardRank> cardPowerOrder;
 
     //private WarGameRulesSO rules;
@@ -28,26 +32,30 @@ public class GameManager : MonoBehaviour {
 
     private float animationSpeed = 1f;
 
+    private float cardWidth;
+
     private float animationTime {
         get {
             return this.cardAnimationTimeBase / this.animationSpeed;
 		}
 	}
 
-    private void Start() {
+    private IEnumerator Start() {
+		ApplicationSettings.Changed += this.ApplicationSettings_Changed;
+
+        StartCoroutine(AssetsManager.Instance.UpdateAssetsInfo());
+
+        this.cardWidth = ((RectTransform)this.cardPrefab.transform).sizeDelta.x;
         this.InitializeDeck();
         this.InitializeEventHandlers();
+
+        yield return StartCoroutine(this.LoadCardsAsset());
+
         StartCoroutine(this.PlayGame());
     }
 
-	private void Update() {
-        this.UpdateCameraPosition();
-	}
-
-	private void UpdateCameraPosition() {
-        // Some magic numbers, fix later
-        var widthWorldUnits = ((float)Screen.width / Screen.height) * this.mainCamera.orthographicSize * 2f;
-        this.mainCamera.transform.position = new Vector3(widthWorldUnits / 2f - 2f, 0f, this.mainCamera.transform.position.z);
+	private void OnDestroy() {
+        ApplicationSettings.Changed -= ApplicationSettings_Changed;
 	}
 
 	private void InitializeDeck() {
@@ -55,11 +63,10 @@ public class GameManager : MonoBehaviour {
 
         foreach (var suit in Enum.GetValues(typeof(CardSuit)).Cast<CardSuit>()) {
             foreach (var rank in Enum.GetValues(typeof(CardRank)).Cast<CardRank>()) {
-                var card = GameObject.Instantiate(this.cardPrefab, Vector3.zero, Quaternion.identity);
+                var card = GameObject.Instantiate(this.cardPrefab, Vector3.zero, Quaternion.identity, this.playArea);
                 card.rank = rank;
                 card.suit = suit;
                 card.gameObject.SetActive(false);
-                this.UpdateCardVisuals(card);
                 this.allCards.Add(card);
             }
         }
@@ -77,6 +84,7 @@ public class GameManager : MonoBehaviour {
 
     private IEnumerator PlayGame() {
         this.InitializeNewGameState();
+        yield return null;
         yield return StartCoroutine(this.DealCards());
         yield return StartCoroutine(this.PlayActualGame());
     }
@@ -84,8 +92,15 @@ public class GameManager : MonoBehaviour {
 	private void InitializeNewGameState() {
         this.state = new GameState();
 
-        this.state.players.Add(new Player() { cardsPosition = new Vector3(0f, 3f, 0f) });
-        this.state.players.Add(new Player() { cardsPosition = new Vector3(0f, -3f, 0f) });
+        for (int i = 0; i < this.playerCount; i++) {
+            var player = new Player();
+
+            var panel = GameObject.Instantiate(this.playerPanelPrefab, this.playArea);
+            panel.nameLabel.text = i == 0 ? "Player" : "Computer " + i;
+            player.panel = panel;
+
+            this.state.players.Add(player);
+        }
 
         foreach (var card in this.allCards) {
             card.power = this.cardPowerOrder.IndexOf(card.rank);
@@ -100,12 +115,16 @@ public class GameManager : MonoBehaviour {
             var card = activeCards[i];
             var player = this.state.players[i % this.state.players.Count];
             player.cards.Enqueue(card);
-            card.transform.position = player.cardsPosition;
-            card.transform.rotation = FaceDown;
+            card.transform.localPosition = this.GetPlayerCardPosition(player);
+            card.transform.localRotation = FaceDown;
             card.gameObject.SetActive(true);
 		}
 
-        yield break;
+        foreach (var player in this.state.players) {
+            player.UpdateCardsCound();
+        }
+
+        yield break; // Method designed for nice animation that will be made later
     }
 
     private IEnumerator PlayActualGame() {
@@ -223,41 +242,46 @@ public class GameManager : MonoBehaviour {
 
 	private IEnumerator DrawCard(Player player, bool isVisible, out Card card) {
         card = player.cards.Dequeue();
+
+        player.UpdateCardsCound();
+
         var rotation = isVisible ? FaceUp : FaceDown;
-        return this.AnimatePositionAndRotation(card, player.cardsPosition + this.GetCardOffset(this.state.currentRoundCardsOffset), rotation, this.animationTime);
+        return this.AnimatePositionAndRotation(card, this.GetPlayerCardPosition(player) + this.GetCardOffset(this.state.currentRoundCardsOffset), rotation, this.animationTime);
 	}
 
     private IEnumerator GiveRoundCardsToPlayer(Player winner) {
         foreach (var card in this.state.currentRoundCards) {
-            StartCoroutine(this.AnimatePositionAndRotation(card, winner.cardsPosition, FaceDown, this.animationTime));
+            StartCoroutine(this.AnimatePositionAndRotation(card, this.GetPlayerCardPosition(winner), FaceDown, this.animationTime));
             winner.cards.Enqueue(card);
 		}
         yield return new WaitForSeconds(this.animationTime);
     }
 
     private IEnumerator AnimatePositionAndRotation(Card card, Vector3 targetPosition, Quaternion targetRotation, float time) {
-        var startPosition = card.transform.position;
-        var startRotation = card.transform.rotation;
+        var startPosition = card.transform.localPosition;
+        var startRotation = card.transform.localRotation;
 
         yield return StartCoroutine(AnimatePositionAndRotation(card, startPosition, targetPosition, startRotation, targetRotation, time));
     }
 
     private IEnumerator AnimatePositionAndRotation(Card card, Vector3 initialPosition, Vector3 targetPosition, Quaternion initialRotaion, Quaternion targetRotation, float time) {
-        card.transform.position = initialPosition;
-        card.transform.rotation = initialRotaion;
+		card.transform.localPosition = initialPosition;
+		card.transform.localRotation = initialRotaion;
 
-        var dt = 0f;
+		var dt = 0f;
         while (dt < time) {
             dt += Time.deltaTime;
             var t = dt / time;
-            card.transform.position = Vector3.Lerp(initialPosition, targetPosition, t);
-            card.transform.rotation = Quaternion.Lerp(initialRotaion, targetRotation, t);
-            yield return null;
+			card.transform.localPosition = Vector3.Lerp(initialPosition, targetPosition, t);
+			card.transform.localRotation = Quaternion.Lerp(initialRotaion, targetRotation, t);
+			yield return null;
         }
     }
 
     private Vector3 GetCardOffset(int offsetPositions) {
-        return Vector3.right * (3f + offsetPositions * 0.5f) + Vector3.back * (offsetPositions * 0.01f);
+        var horizontal = Vector3.right * ((1.3f + offsetPositions * 0.2f) * this.cardWidth);
+        var depth = Vector3.back * (offsetPositions * 0.01f);
+        return horizontal + depth;
     }
 
     private void UpdateCardVisuals(Card card) {
@@ -265,7 +289,27 @@ public class GameManager : MonoBehaviour {
     }
 
     private Sprite GetCardSprite(CardSuit suit, CardRank rank) {
-        return Resources.Load<Sprite>($"Deck1/{suit}_{(int)rank}");
+        return AssetsManager.Instance.GetCardSprite(suit, rank);
 	}
+
+    private Vector3 GetPlayerCardPosition(Player player) {
+        return player.panel.cardReferencePoint.TransformPointTo(this.playArea, Vector3.zero);
+    }
+
+    private IEnumerator LoadCardsAsset() {
+        this.loadingAssetsPanel.SetActive(true);
+        
+        yield return StartCoroutine(AssetsManager.Instance.LoadCardsPack(ApplicationSettings.CardFaces));
+
+        foreach (var card in this.allCards) {
+            this.UpdateCardVisuals(card);
+        }
+
+        this.loadingAssetsPanel.SetActive(false);
+    }
+
+    private void ApplicationSettings_Changed(object sender, EventArgs e) {
+        this.StartCoroutine(this.LoadCardsAsset());
+    }
 }
 

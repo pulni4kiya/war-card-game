@@ -1,0 +1,70 @@
+ManifestFileVersion: 0
+CRC: 4242568554
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: cf67255dca34b4cd22821d7c2f708e68
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: c90fc19e2679e5295d10bd00f33cb4c3
+HashAppended: 0
+ClassTypes:
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 213
+  Script: {instanceID: 0}
+SerializeReferenceClassIdentifiers: []
+Assets:
+- Assets/Images/Decks/Deck2/Diamonds_6.png
+- Assets/Images/Decks/Deck2/Spades_13.png
+- Assets/Images/Decks/Deck2/Spades_12.png
+- Assets/Images/Decks/Deck2/Spades_6.png
+- Assets/Images/Decks/Deck2/Clubs_8.png
+- Assets/Images/Decks/Deck2/Spades_7.png
+- Assets/Images/Decks/Deck2/Diamonds_14.png
+- Assets/Images/Decks/Deck2/Diamonds_12.png
+- Assets/Images/Decks/Deck2/Hearts_7.png
+- Assets/Images/Decks/Deck2/Diamonds_2.png
+- Assets/Images/Decks/Deck2/Diamonds_8.png
+- Assets/Images/Decks/Deck2/Spades_4.png
+- Assets/Images/Decks/Deck2/Hearts_3.png
+- Assets/Images/Decks/Deck2/Diamonds_3.png
+- Assets/Images/Decks/Deck2/Diamonds_15.png
+- Assets/Images/Decks/Deck2/Clubs_5.png
+- Assets/Images/Decks/Deck2/Diamonds_10.png
+- Assets/Images/Decks/Deck2/Hearts_15.png
+- Assets/Images/Decks/Deck2/Diamonds_13.png
+- Assets/Images/Decks/Deck2/Clubs_10.png
+- Assets/Images/Decks/Deck2/Hearts_8.png
+- Assets/Images/Decks/Deck2/Diamonds_5.png
+- Assets/Images/Decks/Deck2/Hearts_12.png
+- Assets/Images/Decks/Deck2/Clubs_2.png
+- Assets/Images/Decks/Deck2/Hearts_14.png
+- Assets/Images/Decks/Deck2/Clubs_4.png
+- Assets/Images/Decks/Deck2/Clubs_14.png
+- Assets/Images/Decks/Deck2/Diamonds_4.png
+- Assets/Images/Decks/Deck2/Clubs_3.png
+- Assets/Images/Decks/Deck2/Hearts_4.png
+- Assets/Images/Decks/Deck2/Diamonds_9.png
+- Assets/Images/Decks/Deck2/Clubs_15.png
+- Assets/Images/Decks/Deck2/Clubs_9.png
+- Assets/Images/Decks/Deck2/Hearts_5.png
+- Assets/Images/Decks/Deck2/Spades_10.png
+- Assets/Images/Decks/Deck2/Spades_2.png
+- Assets/Images/Decks/Deck2/Clubs_7.png
+- Assets/Images/Decks/Deck2/Clubs_6.png
+- Assets/Images/Decks/Deck2/Hearts_6.png
+- Assets/Images/Decks/Deck2/Hearts_10.png
+- Assets/Images/Decks/Deck2/Diamonds_7.png
+- Assets/Images/Decks/Deck2/Spades_3.png
+- Assets/Images/Decks/Deck2/Spades_15.png
+- Assets/Images/Decks/Deck2/Hearts_9.png
+- Assets/Images/Decks/Deck2/Hearts_13.png
+- Assets/Images/Decks/Deck2/Clubs_12.png
+- Assets/Images/Decks/Deck2/Spades_14.png
+- Assets/Images/Decks/Deck2/Clubs_13.png
+- Assets/Images/Decks/Deck2/Spades_9.png
+- Assets/Images/Decks/Deck2/Hearts_2.png
+- Assets/Images/Decks/Deck2/Spades_8.png
+- Assets/Images/Decks/Deck2/Spades_5.png
+Dependencies: []

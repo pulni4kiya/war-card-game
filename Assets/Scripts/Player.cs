@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,11 +8,15 @@ public class Player {
     public bool isActiveInRound;
     public bool isActiveInGame = true;
     public Card activeRoundCard;
-    public Vector3 cardsPosition;
+	public PlayerPanel panel;
 
-    public bool isActive {
+	public bool isActive {
         get {
             return this.isActiveInGame && this.isActiveInRound;
         }
+    }
+
+	public void UpdateCardsCound() {
+        this.panel.cardsLabel.text = "Cards: " + this.cards.Count;
     }
 }
