@@ -1,10 +1,24 @@
 {
-  "deckFaces": [
+  "cardFaceBundles": [
     "deck1",
     "deck2",
     "deck3",
     "deck4",
     "deck5",
     "deck6"
+  ],
+  "cardBackBundles": [
+    "back1",
+    "back2",
+    "back3",
+    "back4",
+    "back5",
+    "back6"
+  ],
+  "backgroundBundles": [
+    "background1",
+    "background2",
+    "background3",
+    "background4"
   ]
 }

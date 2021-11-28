@@ -13,8 +13,11 @@ public class PickerItem : MonoBehaviour {
     [NonSerialized]
 	public string bundleName;
 
-	public void Initialize(string bundleName) {
+	private bool hasSeparateThumbnail;
+
+	public void Initialize(string bundleName, bool hasSeparateThumbnail) {
         this.bundleName = bundleName;
+        this.hasSeparateThumbnail = hasSeparateThumbnail;
         StartCoroutine(this.UpdateImage());
 	}
 
@@ -23,7 +26,7 @@ public class PickerItem : MonoBehaviour {
         this.itemImage.gameObject.SetActive(false);
 
         var result = new RefData<Sprite>();
-        yield return StartCoroutine(AssetsManager.Instance.GetThumbnail(this.bundleName, result));
+        yield return StartCoroutine(AssetsManager.Instance.GetThumbnail(this.bundleName, this.hasSeparateThumbnail, result));
 
         this.downloadingOverlay.SetActive(false);
         this.itemImage.sprite = result.data;

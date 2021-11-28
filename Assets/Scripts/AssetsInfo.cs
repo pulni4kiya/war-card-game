@@ -5,5 +5,7 @@ using UnityEngine;
 
 [Serializable]
 public class AssetsInfo {
-	public List<string> deckFaces;
+	public List<string> cardFaceBundles;
+	public List<string> cardBackBundles;
+	public List<string> backgroundBundles;
 }

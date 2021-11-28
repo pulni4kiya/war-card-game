@@ -20,6 +20,7 @@ public class GameManager : MonoBehaviour {
     public Slider waitTimeSlider;
     public Camera mainCamera;
     public GameObject loadingAssetsPanel;
+    public Image backgroundImage;
     public List<CardRank> cardPowerOrder;
 
     //private WarGameRulesSO rules;
@@ -49,7 +50,7 @@ public class GameManager : MonoBehaviour {
         this.InitializeDeck();
         this.InitializeEventHandlers();
 
-        yield return StartCoroutine(this.LoadCardsAsset());
+        yield return StartCoroutine(this.LoadAsset());
 
         StartCoroutine(this.PlayGame());
     }
@@ -286,6 +287,7 @@ public class GameManager : MonoBehaviour {
 
     private void UpdateCardVisuals(Card card) {
         card.faceImage.sprite = this.GetCardSprite(card.suit, card.rank);
+        card.backImage.sprite = AssetsManager.Instance.GetCardBackSprite();
     }
 
     private Sprite GetCardSprite(CardSuit suit, CardRank rank) {
@@ -296,20 +298,24 @@ public class GameManager : MonoBehaviour {
         return player.panel.cardReferencePoint.TransformPointTo(this.playArea, Vector3.zero);
     }
 
-    private IEnumerator LoadCardsAsset() {
+    private IEnumerator LoadAsset() {
         this.loadingAssetsPanel.SetActive(true);
         
         yield return StartCoroutine(AssetsManager.Instance.LoadCardsPack(ApplicationSettings.CardFaces));
+        yield return StartCoroutine(AssetsManager.Instance.LoadCardBack(ApplicationSettings.CardBacks));
+        yield return StartCoroutine(AssetsManager.Instance.LoadBackground(ApplicationSettings.Background));
 
         foreach (var card in this.allCards) {
             this.UpdateCardVisuals(card);
         }
 
+        this.backgroundImage.sprite = AssetsManager.Instance.GetBackgroundSprite();
+
         this.loadingAssetsPanel.SetActive(false);
     }
 
     private void ApplicationSettings_Changed(object sender, EventArgs e) {
-        this.StartCoroutine(this.LoadCardsAsset());
+        this.StartCoroutine(this.LoadAsset());
     }
 }
 

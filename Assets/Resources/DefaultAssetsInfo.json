@@ -1,5 +1,11 @@
 {
-  "deckFaces": [
+  "cardFaceBundles": [
     "deck1"
+  ],
+  "cardBackBundles": [
+    "back1"
+  ],
+  "backgroundBundles": [
+    "background1"
   ]
 }

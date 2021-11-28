@@ -1,5 +1,5 @@
 ManifestFileVersion: 0
-CRC: 211324746
+CRC: 2199877833
 AssetBundleManifest:
   AssetBundleInfos:
     Info_0:
@@ -37,4 +37,70 @@ AssetBundleManifest:
       Dependencies: {}
     Info_11:
       Name: deck6thumb
+      Dependencies: {}
+    Info_12:
+      Name: back/back2
+      Dependencies: {}
+    Info_13:
+      Name: back/back1
+      Dependencies: {}
+    Info_14:
+      Name: back/back3
+      Dependencies: {}
+    Info_15:
+      Name: back/back4
+      Dependencies: {}
+    Info_16:
+      Name: back/back5
+      Dependencies: {}
+    Info_17:
+      Name: back/back6
+      Dependencies: {}
+    Info_18:
+      Name: back/back7
+      Dependencies: {}
+    Info_19:
+      Name: back/back8
+      Dependencies: {}
+    Info_20:
+      Name: back/back9
+      Dependencies: {}
+    Info_21:
+      Name: back/back10
+      Dependencies: {}
+    Info_22:
+      Name: back/back11
+      Dependencies: {}
+    Info_23:
+      Name: back/back12
+      Dependencies: {}
+    Info_24:
+      Name: back/back13
+      Dependencies: {}
+    Info_25:
+      Name: back/back14
+      Dependencies: {}
+    Info_26:
+      Name: background/background1
+      Dependencies: {}
+    Info_27:
+      Name: background/background2
+      Dependencies: {}
+    Info_28:
+      Name: background/background3
+      Dependencies: {}
+    Info_29:
+      Name: background/background4
+      Dependencies: {}
+    Info_30:
+      Name: background/background5
+      Dependencies: {}
+    Info_31:
+      Name: background/background6
+      Dependencies: {}
+    Info_32:
+      Name: background/background7
+      Dependencies: {}
+    Info_33:
+      Name: background/background8
       Dependencies: {}
