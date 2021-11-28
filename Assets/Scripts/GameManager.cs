@@ -12,6 +12,10 @@ public class GameManager : MonoBehaviour {
     public Card cardPrefab;
     public Button nextRoundButton;
     public float cardAnimationTimeBase;
+    public Slider animationSpeedSlider;
+    public Toggle autoPlayToggle;
+    public Slider waitTimeSlider;
+    public Camera mainCamera;
     public List<CardRank> cardPowerOrder;
 
     //private WarGameRulesSO rules;
@@ -36,13 +40,22 @@ public class GameManager : MonoBehaviour {
         StartCoroutine(this.PlayGame());
     }
 
+	private void Update() {
+        this.UpdateCameraPosition();
+	}
+
+	private void UpdateCameraPosition() {
+        // Some magic numbers, fix later
+        var widthWorldUnits = ((float)Screen.width / Screen.height) * this.mainCamera.orthographicSize * 2f;
+        this.mainCamera.transform.position = new Vector3(widthWorldUnits / 2f - 2f, 0f, this.mainCamera.transform.position.z);
+	}
+
 	private void InitializeDeck() {
         this.allCards = new List<Card>(52);
 
         foreach (var suit in Enum.GetValues(typeof(CardSuit)).Cast<CardSuit>()) {
             foreach (var rank in Enum.GetValues(typeof(CardRank)).Cast<CardRank>()) {
                 var card = GameObject.Instantiate(this.cardPrefab, Vector3.zero, Quaternion.identity);
-                //card.Initialize(rank, suit);
                 card.rank = rank;
                 card.suit = suit;
                 card.gameObject.SetActive(false);
@@ -55,6 +68,10 @@ public class GameManager : MonoBehaviour {
 	private void InitializeEventHandlers() {
         this.nextRoundButton.onClick.AddListener(() => {
             this.moveToNextRound = true;
+        });
+
+        this.animationSpeedSlider.onValueChanged.AddListener((value) => {
+            Time.timeScale = value;
         });
     }
 
@@ -99,8 +116,9 @@ public class GameManager : MonoBehaviour {
     }
 
 	private IEnumerator WaitForInput() {
+        var autoPlayTime = Time.unscaledTime + this.waitTimeSlider.value;
         this.moveToNextRound = false;
-        while (this.moveToNextRound == false) {
+        while (this.moveToNextRound == false && (this.autoPlayToggle.isOn == false || Time.unscaledTime < autoPlayTime)) {
             yield return null;
 		}
 	}
