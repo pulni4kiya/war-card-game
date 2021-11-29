@@ -7,6 +7,7 @@ public class Player {
     public Queue<Card> cards = new Queue<Card>(52);
     public bool isActiveInRound;
     public bool isActiveInGame = true;
+	public bool isComputer = false;
     public Card activeRoundCard;
 	public PlayerPanel panel;
 

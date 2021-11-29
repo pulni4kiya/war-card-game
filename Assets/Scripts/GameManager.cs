@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -21,6 +22,9 @@ public class GameManager : MonoBehaviour {
 	public Camera mainCamera;
 	public GameObject loadingAssetsPanel;
 	public Image backgroundImage;
+	public RectTransform warLabelTransform;
+	public TMP_Text winLossLabel;
+	public Sounds sounds;
 	public List<CardRank> cardPowerOrder;
 
 	//private WarGameRulesSO rules;
@@ -35,6 +39,8 @@ public class GameManager : MonoBehaviour {
 
 	private float cardWidth;
 
+	private AudioSource audioSource;
+
 	private float animationTime {
 		get {
 			return this.cardAnimationTimeBase / this.animationSpeed;
@@ -42,6 +48,8 @@ public class GameManager : MonoBehaviour {
 	}
 
 	private IEnumerator Start() {
+		this.audioSource = this.gameObject.AddComponent<AudioSource>();
+
 		ApplicationSettings.Changed += this.ApplicationSettings_Changed;
 
 		StartCoroutine(AssetsManager.Instance.UpdateAssetsInfo());
@@ -52,11 +60,16 @@ public class GameManager : MonoBehaviour {
 
 		yield return StartCoroutine(this.LoadAsset());
 
-		StartCoroutine(this.PlayGame());
+		StartCoroutine(this.PrepareAndPlayGame());
 	}
 
 	private void OnDestroy() {
 		ApplicationSettings.Changed -= ApplicationSettings_Changed;
+	}
+
+	public void NewGame() {
+		StopAllCoroutines();
+		StartCoroutine(this.PrepareAndPlayGame());
 	}
 
 	private void InitializeDeck() {
@@ -83,18 +96,27 @@ public class GameManager : MonoBehaviour {
 		});
 	}
 
-	private IEnumerator PlayGame() {
-		this.InitializeNewGameState();
-		yield return null;
-		yield return StartCoroutine(this.DealCards());
-		yield return StartCoroutine(this.PlayActualGame());
+	private IEnumerator PrepareAndPlayGame() {
+		while (true) {
+			this.InitializeNewGame();
+			yield return null;
+			yield return StartCoroutine(this.DealCards());
+			yield return StartCoroutine(this.PlayGame());
+			yield return StartCoroutine(this.WaitForInput(true));
+		}
 	}
 
-	private void InitializeNewGameState() {
+	private void InitializeNewGame() {
+		foreach (var panel in this.playArea.GetComponentsInChildren<PlayerPanel>()) {
+			GameObject.Destroy(panel.gameObject);
+		}
 		this.state = new GameState();
+
+		this.winLossLabel.gameObject.SetActive(false);
 
 		for (int i = 0; i < this.playerCount; i++) {
 			var player = new Player();
+			player.isComputer = i != 0;
 
 			var panel = GameObject.Instantiate(this.playerPanelPrefab, this.playArea);
 			panel.nameLabel.text = i == 0 ? "Player" : "Computer " + i;
@@ -128,17 +150,38 @@ public class GameManager : MonoBehaviour {
 		yield break; // Method designed for nice animation that will be made later
 	}
 
-	private IEnumerator PlayActualGame() {
+	private IEnumerator PlayGame() {
 		while (this.state.gameWinner == null) {
 			yield return StartCoroutine(this.PlayOneRound());
 			this.DetermineGameWinner();
 		}
+		if (this.state.gameWinner.isComputer == false) {
+			this.PlaySound(this.sounds.win);
+			this.winLossLabel.text = "WIN!";
+			this.winLossLabel.color = Color.green;
+		} else {
+			this.PlaySound(this.sounds.lose);
+			this.winLossLabel.text = "LOSS!";
+			this.winLossLabel.color = Color.red;
+		}
+		this.winLossLabel.gameObject.SetActive(true);
 	}
 
-	private IEnumerator WaitForInput() {
+	private IEnumerator WaitForInput(bool mustBeManual) {
 		var autoPlayTime = Time.unscaledTime + this.waitTimeSlider.value;
 		this.moveToNextRound = false;
-		while (this.moveToNextRound == false && (this.autoPlayToggle.isOn == false || Time.unscaledTime < autoPlayTime)) {
+
+		while (true) {
+			if (this.moveToNextRound == true) {
+				break;
+			}
+
+			if (mustBeManual == false) {
+				if (this.autoPlayToggle.isOn && Time.unscaledTime >= autoPlayTime) {
+					break;
+				}
+			}
+
 			yield return null;
 		}
 	}
@@ -155,7 +198,8 @@ public class GameManager : MonoBehaviour {
 			player.isActiveInRound = true;
 		}
 
-		int cardsToDrawBase = 1;
+		var cardsToDrawBase = 1;
+		var warTextScale = 0.5f;
 		do {
 			var cardsToDraw = cardsToDrawBase;
 			if (cardsToDrawBase > 1) {
@@ -165,10 +209,17 @@ public class GameManager : MonoBehaviour {
 			yield return StartCoroutine(this.DrawCards(cardsToDraw));
 			this.DetermineRoundWinners();
 			cardsToDrawBase = 3;
+			warTextScale += 0.5f;
+
+			if (this.state.currentRoundWinners.Count > 1) {
+				this.PlaySound(this.sounds.war);
+				yield return StartCoroutine(this.AnimateWarText(warTextScale, this.animationTime, true));
+			}
 		} while (this.state.currentRoundWinners.Count > 1);
 
-		yield return StartCoroutine(this.WaitForInput());
+		yield return StartCoroutine(this.WaitForInput(false));
 
+		StartCoroutine(this.AnimateWarText(0f, this.animationTime, false));
 		yield return StartCoroutine(this.GiveRoundCardsToPlayer(this.state.currentRoundWinners[0]));
 	}
 
@@ -246,6 +297,8 @@ public class GameManager : MonoBehaviour {
 			}
 
 			this.state.currentRoundCardsOffset++;
+
+			this.PlaySound(this.sounds.cardDraw);
 
 			yield return new WaitForSeconds(this.animationTime);
 		}
@@ -327,5 +380,35 @@ public class GameManager : MonoBehaviour {
 
 	private void ApplicationSettings_Changed(object sender, EventArgs e) {
 		this.StartCoroutine(this.LoadAsset());
+	}
+
+	private IEnumerator AnimateWarText(float newScale, float time, bool shake) {
+		var fromScale = this.warLabelTransform.localScale;
+		var toScale = Vector3.one * newScale;
+
+		var dt = 0f;
+		while (dt < time) {
+			dt += Time.deltaTime;
+			var t = dt / time;
+			this.warLabelTransform.localScale = Vector3.Lerp(fromScale, toScale, t);
+			if (shake) {
+				this.warLabelTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.PerlinNoise(dt * 100f, 0f) * 50 - 25f);
+			}
+			yield return null;
+		}
+
+		this.warLabelTransform.localRotation = Quaternion.identity;
+	}
+
+	private void PlaySound(AudioClip sound) {
+		this.audioSource.PlayOneShot(sound);
+	}
+
+	[Serializable]
+	public class Sounds {
+		public AudioClip cardDraw;
+		public AudioClip war;
+		public AudioClip win;
+		public AudioClip lose;
 	}
 }
