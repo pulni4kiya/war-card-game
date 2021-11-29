@@ -10,24 +10,22 @@ public class GameManager : MonoBehaviour {
 	private static readonly Quaternion FaceUp = Quaternion.identity;
 	private static readonly Quaternion FaceDown = Quaternion.Euler(0f, 180f, 0f);
 
-	public int playerCount = 2;
-	public Card cardPrefab;
-	public PlayerPanel playerPanelPrefab;
-	public RectTransform playArea;
-	public Button nextRoundButton;
-	public float cardAnimationTimeBase;
-	public Slider animationSpeedSlider;
-	public Toggle autoPlayToggle;
-	public Slider waitTimeSlider;
-	public Camera mainCamera;
-	public GameObject loadingAssetsPanel;
-	public Image backgroundImage;
-	public RectTransform warLabelTransform;
-	public TMP_Text winLossLabel;
-	public Sounds sounds;
-	public List<CardRank> cardPowerOrder;
-
-	//private WarGameRulesSO rules;
+	[SerializeField] private int playerCount = 2;
+	[SerializeField] private Card cardPrefab;
+	[SerializeField] private PlayerPanel playerPanelPrefab;
+	[SerializeField] private RectTransform playArea;
+	[SerializeField] private Button nextRoundButton;
+	[SerializeField] private float cardAnimationTimeBase;
+	[SerializeField] private Slider animationSpeedSlider;
+	[SerializeField] private Toggle autoPlayToggle;
+	[SerializeField] private Slider waitTimeSlider;
+	[SerializeField] private Camera mainCamera;
+	[SerializeField] private GameObject loadingAssetsPanel;
+	[SerializeField] private Image backgroundImage;
+	[SerializeField] private RectTransform warLabelTransform;
+	[SerializeField] private TMP_Text winLossLabel;
+	[SerializeField] private Sounds sounds;
+	[SerializeField] private List<CardRank> cardPowerOrder;
 
 	private GameState state;
 
@@ -55,10 +53,12 @@ public class GameManager : MonoBehaviour {
 		StartCoroutine(AssetsManager.Instance.UpdateAssetsInfo());
 
 		this.cardWidth = ((RectTransform)this.cardPrefab.transform).sizeDelta.x;
-		this.InitializeDeck();
-		this.InitializeEventHandlers();
 
-		yield return StartCoroutine(this.LoadAsset());
+		this.InitializeDeck();
+
+		this.InitializeUIEventHandlers();
+
+		yield return StartCoroutine(this.LoadAssets());
 
 		StartCoroutine(this.PrepareAndPlayGame());
 	}
@@ -86,7 +86,7 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 
-	private void InitializeEventHandlers() {
+	private void InitializeUIEventHandlers() {
 		this.nextRoundButton.onClick.AddListener(() => {
 			this.moveToNextRound = true;
 		});
@@ -146,7 +146,7 @@ public class GameManager : MonoBehaviour {
 		foreach (var player in this.state.players) {
 			player.UpdateCardsCount();
 		}
-
+		
 		yield break; // Method designed for nice animation that will be made later
 	}
 
@@ -167,26 +167,42 @@ public class GameManager : MonoBehaviour {
 		this.winLossLabel.gameObject.SetActive(true);
 	}
 
-	private IEnumerator WaitForInput(bool mustBeManual) {
-		var autoPlayTime = Time.unscaledTime + this.waitTimeSlider.value;
-		this.moveToNextRound = false;
+	private IEnumerator PlayOneRound() {
+		this.PrepareForRound();
 
-		while (true) {
-			if (this.moveToNextRound == true) {
-				break;
+		var cardsToDrawBase = 1;
+		var warTextScale = 0.5f;
+		do {
+			// Draw cards
+			var cardsToDraw = cardsToDrawBase;
+			if (cardsToDrawBase > 1) {
+				var maxRemainingCards = cardsToDrawBase == 1 ? 1 : this.state.players.Where(p => p.isActive).Max(p => p.cards.Count);
+				cardsToDraw = Mathf.Min(maxRemainingCards, cardsToDrawBase);
 			}
+			yield return StartCoroutine(this.DrawCards(cardsToDraw));
 
-			if (mustBeManual == false) {
-				if (this.autoPlayToggle.isOn && Time.unscaledTime >= autoPlayTime) {
-					break;
-				}
+			// Determine round winner(s)
+			this.DetermineRoundWinners();
+
+			// Adjust state for next round (if there's a war)
+			cardsToDrawBase = 3;
+			warTextScale += 0.5f;
+
+			// Play war effects
+			if (this.state.currentRoundWinners.Count > 1) {
+				this.PlaySound(this.sounds.war);
+				yield return StartCoroutine(this.AnimateWarText(warTextScale, this.animationTime, true));
 			}
+		} while (this.state.currentRoundWinners.Count > 1);
 
-			yield return null;
-		}
+		yield return StartCoroutine(this.WaitForInput(false));
+
+		StartCoroutine(this.AnimateWarText(0f, this.animationTime, false));
+
+		yield return StartCoroutine(this.GiveRoundCardsToPlayer(this.state.currentRoundWinners[0]));
 	}
 
-	private IEnumerator PlayOneRound() {
+	private void PrepareForRound() {
 		this.state.currentRoundCardsOffset = 0;
 		this.state.currentRoundCards.Clear();
 
@@ -197,30 +213,6 @@ public class GameManager : MonoBehaviour {
 
 			player.isActiveInRound = true;
 		}
-
-		var cardsToDrawBase = 1;
-		var warTextScale = 0.5f;
-		do {
-			var cardsToDraw = cardsToDrawBase;
-			if (cardsToDrawBase > 1) {
-				var maxRemainingCards = cardsToDrawBase == 1 ? 1 : this.state.players.Where(p => p.isActive).Max(p => p.cards.Count);
-				cardsToDraw = Mathf.Min(maxRemainingCards, cardsToDrawBase);
-			}
-			yield return StartCoroutine(this.DrawCards(cardsToDraw));
-			this.DetermineRoundWinners();
-			cardsToDrawBase = 3;
-			warTextScale += 0.5f;
-
-			if (this.state.currentRoundWinners.Count > 1) {
-				this.PlaySound(this.sounds.war);
-				yield return StartCoroutine(this.AnimateWarText(warTextScale, this.animationTime, true));
-			}
-		} while (this.state.currentRoundWinners.Count > 1);
-
-		yield return StartCoroutine(this.WaitForInput(false));
-
-		StartCoroutine(this.AnimateWarText(0f, this.animationTime, false));
-		yield return StartCoroutine(this.GiveRoundCardsToPlayer(this.state.currentRoundWinners[0]));
 	}
 
 	private void DetermineRoundWinners() {
@@ -362,7 +354,7 @@ public class GameManager : MonoBehaviour {
 		return player.panel.cardReferencePoint.TransformPointTo(this.playArea, Vector3.zero);
 	}
 
-	private IEnumerator LoadAsset() {
+	private IEnumerator LoadAssets() {
 		this.loadingAssetsPanel.SetActive(true);
 
 		yield return StartCoroutine(AssetsManager.Instance.LoadCardsPack(ApplicationSettings.CardFaces));
@@ -379,7 +371,7 @@ public class GameManager : MonoBehaviour {
 	}
 
 	private void ApplicationSettings_Changed(object sender, EventArgs e) {
-		this.StartCoroutine(this.LoadAsset());
+		this.StartCoroutine(this.LoadAssets());
 	}
 
 	private IEnumerator AnimateWarText(float newScale, float time, bool shake) {
@@ -398,6 +390,25 @@ public class GameManager : MonoBehaviour {
 		}
 
 		this.warLabelTransform.localRotation = Quaternion.identity;
+	}
+
+	private IEnumerator WaitForInput(bool mustBeManual) {
+		var autoPlayTime = Time.unscaledTime + this.waitTimeSlider.value;
+		this.moveToNextRound = false;
+
+		while (true) {
+			if (this.moveToNextRound == true) {
+				break;
+			}
+
+			if (mustBeManual == false) {
+				if (this.autoPlayToggle.isOn && Time.unscaledTime >= autoPlayTime) {
+					break;
+				}
+			}
+
+			yield return null;
+		}
 	}
 
 	private void PlaySound(AudioClip sound) {

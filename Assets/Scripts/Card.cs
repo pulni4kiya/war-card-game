@@ -14,9 +14,4 @@ public class Card : MonoBehaviour {
 	public CardSuit suit;
 	[NonSerialized]
 	public int power;
-
-	//public void Initialize(CardRank rank, CardSuit suit) {
-	//	this.rank = rank;
-	//	this.suit = suit;
-	//}
 }

@@ -43,7 +43,7 @@ public class SettingsController : MonoBehaviour {
         ApplicationSettings.RaiseChangedEvent();
     }
 
-    // Normally that would be a stand-alone UI control, buuut it's getting late
+    // Normally this would be a stand-alone UI control, buuut it's getting late
     public class PickerState {
         public PickerItem pickerItemPrefab;
         public RectTransform itemsContainer;

@@ -36,25 +36,69 @@ public class AssetsManager {
 	private AssetsManager() {
 		this.LoadAssetsData();
 
+		// Create helper DDOL object for running coroutines
 		var go = new GameObject();
 		GameObject.DontDestroyOnLoad(go);
 		this.coroutineHelper = go.AddComponent<CoroutineHelper>();
 	}
 
-	private void LoadAssetsData() {
-		try {
-			if (File.Exists(AssetsInfoFilePath)) {
-				var json = File.ReadAllText(AssetsInfoFilePath);
-				this.assetsInfo = JsonUtility.FromJson<AssetsInfo>(json);
-			}
-		} catch (Exception ex) {
-			Debug.LogException(ex);
+	public IEnumerator GetThumbnail(string bundleName, bool addThumbnailSuffix, RefData<Sprite> result) {
+		yield return this.coroutineHelper.StartCoroutine(this.GetThumbnailInternal(bundleName, addThumbnailSuffix, result));
+	}
+
+	public IEnumerator LoadCardsPack(string cardsFacesPack) {
+		if (this.cardFacesBundle != null && this.cardFacesBundle.name == cardsFacesPack) {
+			yield break;
 		}
 
-		if (this.assetsInfo == null) {
-			var asset = Resources.Load<TextAsset>("DefaultAssetsInfo");
-			this.assetsInfo = JsonUtility.FromJson<AssetsInfo>(asset.text);
+		var result = new RefData<AssetBundle>();
+		yield return this.coroutineHelper.StartCoroutine(this.LoadAssetBundle(cardsFacesPack, result));
+
+		var request = result.data.LoadAllAssetsAsync<Sprite>();
+		yield return request;
+
+		this.cardFaces = request.allAssets.Cast<Sprite>().ToDictionary(sp => sp.name);
+
+		if (this.cardFacesBundle != null) {
+			this.loadedBundles.Remove(this.cardFacesBundle.name);
+			this.cardFacesBundle.Unload(true);
 		}
+
+		this.cardFacesBundle = result.data;
+	}
+
+	public Sprite GetCardSprite(CardSuit suit, CardRank rank) {
+		var name = $"{suit}_{(int)rank}";
+		return this.cardFaces[name];
+	}
+
+	// Backgrounds need to be handled better (unloaded when not needed, similar to the packs with card faces)
+	public IEnumerator LoadBackground(string backgroundBundle) {
+		var result = new RefData<AssetBundle>();
+		yield return this.coroutineHelper.StartCoroutine(this.LoadAssetBundle(backgroundBundle, result));
+
+		var request = result.data.LoadAllAssetsAsync<Sprite>();
+		yield return request;
+
+		this.backgroundSprite = (Sprite)request.allAssets[0];
+	}
+
+	public Sprite GetBackgroundSprite() {
+		return this.backgroundSprite;
+	}
+
+	public IEnumerator LoadCardBack(string cardBackBundle) {
+		var result = new RefData<AssetBundle>();
+		yield return this.coroutineHelper.StartCoroutine(this.LoadAssetBundle(cardBackBundle, result));
+
+		var request = result.data.LoadAllAssetsAsync<Sprite>();
+		yield return request;
+
+		this.cardBackSprite = (Sprite)request.allAssets[0];
+	}
+
+	public Sprite GetCardBackSprite() {
+		return this.cardBackSprite;
 	}
 
 	// It's better to be async then a coroutine
@@ -88,8 +132,20 @@ public class AssetsManager {
 		PlayerPrefs.SetInt(LastAssetsUpdateKey, currentDate);
 	}
 
-	public IEnumerator GetThumbnail(string bundleName, bool addThumbnailSuffix, RefData<Sprite> result) {
-		yield return this.coroutineHelper.StartCoroutine(this.GetThumbnailInternal(bundleName, addThumbnailSuffix, result));
+	private void LoadAssetsData() {
+		try {
+			if (File.Exists(AssetsInfoFilePath)) {
+				var json = File.ReadAllText(AssetsInfoFilePath);
+				this.assetsInfo = JsonUtility.FromJson<AssetsInfo>(json);
+			}
+		} catch (Exception ex) {
+			Debug.LogException(ex);
+		}
+
+		if (this.assetsInfo == null) {
+			var asset = Resources.Load<TextAsset>("DefaultAssetsInfo");
+			this.assetsInfo = JsonUtility.FromJson<AssetsInfo>(asset.text);
+		}
 	}
 
 	private IEnumerator GetThumbnailInternal(string bundleName, bool addThumbnailSuffix, RefData<Sprite> result) {
@@ -122,64 +178,9 @@ public class AssetsManager {
 		var assetRequest = bundleResult.data.LoadAllAssetsAsync<Sprite>();
 		yield return assetRequest;
 
-		// For testing
-		//yield return new WaitForSeconds(UnityEngine.Random.Range(1f, 5f));
-
 		result.data = (Sprite)assetRequest.allAssets[0];
 		loadedThumbnails[thumbnailBundleName] = result.data;
 		thumbnailsInLoading.Remove(thumbnailBundleName);
-	}
-
-	public IEnumerator LoadCardsPack(string cardsFacesPack) {
-		if (this.cardFacesBundle != null && this.cardFacesBundle.name == cardsFacesPack) {
-			yield break;
-		}
-
-		var result = new RefData<AssetBundle>();
-		yield return this.coroutineHelper.StartCoroutine(this.LoadAssetBundle(cardsFacesPack, result));
-		
-		var request = result.data.LoadAllAssetsAsync<Sprite>();
-		yield return request;
-
-		this.cardFaces = request.allAssets.Cast<Sprite>().ToDictionary(sp => sp.name);
-
-		if (this.cardFacesBundle != null) {
-			this.loadedBundles.Remove(this.cardFacesBundle.name);
-			this.cardFacesBundle.Unload(true);
-		}
-
-		this.cardFacesBundle = result.data;
-	}
-
-	public IEnumerator LoadBackground(string backgroundBundle) {
-		//if (this.backgroundBundle != null && this.backgroundBundle.name == backgroundBundle) {
-		//	yield break;
-		//}
-
-		var result = new RefData<AssetBundle>();
-		yield return this.coroutineHelper.StartCoroutine(this.LoadAssetBundle(backgroundBundle, result));
-
-		var request = result.data.LoadAllAssetsAsync<Sprite>();
-		yield return request;
-
-		this.backgroundSprite = (Sprite)request.allAssets[0];
-
-		//if (this.backgroundBundle != null) {
-		//	this.loadedBundles.Remove(this.backgroundBundle.name);
-		//	this.backgroundBundle.Unload(true);
-		//}
-
-		//this.backgroundBundle = result.data;
-	}
-
-	public IEnumerator LoadCardBack(string cardBackBundle) {
-		var result = new RefData<AssetBundle>();
-		yield return this.coroutineHelper.StartCoroutine(this.LoadAssetBundle(cardBackBundle, result));
-
-		var request = result.data.LoadAllAssetsAsync<Sprite>();
-		yield return request;
-
-		this.cardBackSprite = (Sprite)request.allAssets[0];
 	}
 
 	private IEnumerator LoadAssetBundle(string bundleName, RefData<AssetBundle> result) {
@@ -194,19 +195,6 @@ public class AssetsManager {
 			result.data = DownloadHandlerAssetBundle.GetContent(request);
 			this.loadedBundles[bundleName] = result.data;
 		}
-	}
-
-	public Sprite GetCardSprite(CardSuit suit, CardRank rank) {
-		var name = $"{suit}_{(int)rank}";
-		return this.cardFaces[name];
-	}
-
-	public Sprite GetBackgroundSprite() {
-		return this.backgroundSprite;
-	}
-
-	public Sprite GetCardBackSprite() {
-		return this.cardBackSprite;
 	}
 
 	private class CoroutineHelper : MonoBehaviour { }
