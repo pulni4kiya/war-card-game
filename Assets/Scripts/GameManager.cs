@@ -7,8 +7,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour {
-	private static readonly Quaternion FaceUp = Quaternion.identity;
-	private static readonly Quaternion FaceDown = Quaternion.Euler(0f, 180f, 0f);
+	private static readonly Quaternion FaceUpRotation = Quaternion.identity;
+	private static readonly Quaternion FaceDownRotation = Quaternion.Euler(0f, 180f, 0f);
 
 	[SerializeField] private int playerCount = 2;
 	[SerializeField] private Card cardPrefab;
@@ -131,6 +131,10 @@ public class GameManager : MonoBehaviour {
 	}
 
 	private IEnumerator DealCards() {
+		// Show card dealing animation
+		yield return StartCoroutine(this.DealCardsAnimation());
+
+		// Actually randomize the cards between the players
 		var activeCards = this.allCards.Where(c => c.power != -1).ToList();
 		activeCards.Shuffle();
 
@@ -139,15 +143,54 @@ public class GameManager : MonoBehaviour {
 			var player = this.state.players[i % this.state.players.Count];
 			player.cards.Enqueue(card);
 			card.transform.localPosition = this.GetPlayerCardPosition(player);
-			card.transform.localRotation = FaceDown;
+			card.transform.localRotation = FaceDownRotation;
 			card.gameObject.SetActive(true);
 		}
 
 		foreach (var player in this.state.players) {
 			player.UpdateCardsCount();
 		}
-		
-		yield break; // Method designed for nice animation that will be made later
+	}
+
+	private IEnumerator DealCardsAnimation() {
+		var numberOfCardsPerDraw = 3;
+
+		// Throw cards randomly
+		var cardIndex = 0;
+		for (int i = 0; i < 2; i++) {
+			foreach (var player in this.state.players) {
+				yield return StartCoroutine(this.DealCardsToPlayerAnimation(player, cardIndex, numberOfCardsPerDraw));
+				cardIndex += numberOfCardsPerDraw;
+			}
+		}
+
+		// Stack cards
+		cardIndex = 0;
+		for (int i = 0; i < 2; i++) {
+			foreach (var player in this.state.players) {
+				for (int j = 0; j < numberOfCardsPerDraw; j++) {
+					var card = this.allCards[cardIndex];
+					StartCoroutine(this.AnimatePositionAndRotation(card, this.GetPlayerCardPosition(player), FaceDownRotation, this.animationTime));
+					cardIndex++;
+				}
+			}
+		}
+		yield return new WaitForSeconds(this.animationTime);
+	}
+
+	private IEnumerator DealCardsToPlayerAnimation(Player player, int startingIndex, int amount) {
+		this.PlaySound(this.sounds.cardDraw);
+
+		for (int i = 0; i < amount; i++) {
+			var card = this.allCards[startingIndex + i];
+			card.gameObject.SetActive(true);
+
+			var position = this.GetPlayerCardPosition(player) + (Vector3)UnityEngine.Random.insideUnitCircle * (this.cardWidth * 0.3f) + Vector3.back * (startingIndex + i) * 0.01f;
+			var rotation = Quaternion.Euler(0f, 180f, UnityEngine.Random.Range(0f, 360f));
+			StartCoroutine(this.AnimatePositionAndRotation(card, Vector3.zero, position, FaceDownRotation, rotation, this.animationTime));
+		}
+
+		yield return new WaitForSeconds(this.animationTime);
 	}
 
 	private IEnumerator PlayGame() {
@@ -301,13 +344,13 @@ public class GameManager : MonoBehaviour {
 
 		player.UpdateCardsCount();
 
-		var rotation = isVisible ? FaceUp : FaceDown;
+		var rotation = isVisible ? FaceUpRotation : FaceDownRotation;
 		return this.AnimatePositionAndRotation(card, this.GetPlayerCardPosition(player) + this.GetCardOffset(this.state.currentRoundCardsOffset), rotation, this.animationTime);
 	}
 
 	private IEnumerator GiveRoundCardsToPlayer(Player winner) {
 		foreach (var card in this.state.currentRoundCards) {
-			StartCoroutine(this.AnimatePositionAndRotation(card, this.GetPlayerCardPosition(winner), FaceDown, this.animationTime));
+			StartCoroutine(this.AnimatePositionAndRotation(card, this.GetPlayerCardPosition(winner), FaceDownRotation, this.animationTime));
 			winner.cards.Enqueue(card);
 		}
 		winner.UpdateCardsCount();
