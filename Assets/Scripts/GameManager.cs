@@ -6,316 +6,326 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour {
-    private static readonly Quaternion FaceUp = Quaternion.identity;
-    private static readonly Quaternion FaceDown = Quaternion.Euler(0f, 180f, 0f);
+	private static readonly Quaternion FaceUp = Quaternion.identity;
+	private static readonly Quaternion FaceDown = Quaternion.Euler(0f, 180f, 0f);
 
-    public int playerCount = 2;
-    public Card cardPrefab;
-    public PlayerPanel playerPanelPrefab;
-    public RectTransform playArea;
-    public Button nextRoundButton;
-    public float cardAnimationTimeBase;
-    public Slider animationSpeedSlider;
-    public Toggle autoPlayToggle;
-    public Slider waitTimeSlider;
-    public Camera mainCamera;
-    public GameObject loadingAssetsPanel;
-    public Image backgroundImage;
-    public List<CardRank> cardPowerOrder;
+	public int playerCount = 2;
+	public Card cardPrefab;
+	public PlayerPanel playerPanelPrefab;
+	public RectTransform playArea;
+	public Button nextRoundButton;
+	public float cardAnimationTimeBase;
+	public Slider animationSpeedSlider;
+	public Toggle autoPlayToggle;
+	public Slider waitTimeSlider;
+	public Camera mainCamera;
+	public GameObject loadingAssetsPanel;
+	public Image backgroundImage;
+	public List<CardRank> cardPowerOrder;
 
-    //private WarGameRulesSO rules;
+	//private WarGameRulesSO rules;
 
-    private GameState state;
+	private GameState state;
 
-    private List<Card> allCards;
+	private List<Card> allCards;
 
-    private bool moveToNextRound;
+	private bool moveToNextRound;
 
-    private float animationSpeed = 1f;
+	private float animationSpeed = 1f;
 
-    private float cardWidth;
+	private float cardWidth;
 
-    private float animationTime {
-        get {
-            return this.cardAnimationTimeBase / this.animationSpeed;
+	private float animationTime {
+		get {
+			return this.cardAnimationTimeBase / this.animationSpeed;
 		}
 	}
 
-    private IEnumerator Start() {
+	private IEnumerator Start() {
 		ApplicationSettings.Changed += this.ApplicationSettings_Changed;
 
-        StartCoroutine(AssetsManager.Instance.UpdateAssetsInfo());
+		StartCoroutine(AssetsManager.Instance.UpdateAssetsInfo());
 
-        this.cardWidth = ((RectTransform)this.cardPrefab.transform).sizeDelta.x;
-        this.InitializeDeck();
-        this.InitializeEventHandlers();
+		this.cardWidth = ((RectTransform)this.cardPrefab.transform).sizeDelta.x;
+		this.InitializeDeck();
+		this.InitializeEventHandlers();
 
-        yield return StartCoroutine(this.LoadAsset());
+		yield return StartCoroutine(this.LoadAsset());
 
-        StartCoroutine(this.PlayGame());
-    }
+		StartCoroutine(this.PlayGame());
+	}
 
 	private void OnDestroy() {
-        ApplicationSettings.Changed -= ApplicationSettings_Changed;
+		ApplicationSettings.Changed -= ApplicationSettings_Changed;
 	}
 
 	private void InitializeDeck() {
-        this.allCards = new List<Card>(52);
+		this.allCards = new List<Card>(52);
 
-        foreach (var suit in Enum.GetValues(typeof(CardSuit)).Cast<CardSuit>()) {
-            foreach (var rank in Enum.GetValues(typeof(CardRank)).Cast<CardRank>()) {
-                var card = GameObject.Instantiate(this.cardPrefab, Vector3.zero, Quaternion.identity, this.playArea);
-                card.rank = rank;
-                card.suit = suit;
-                card.gameObject.SetActive(false);
-                this.allCards.Add(card);
-            }
-        }
-    }
+		foreach (var suit in Enum.GetValues(typeof(CardSuit)).Cast<CardSuit>()) {
+			foreach (var rank in Enum.GetValues(typeof(CardRank)).Cast<CardRank>()) {
+				var card = GameObject.Instantiate(this.cardPrefab, Vector3.zero, Quaternion.identity, this.playArea);
+				card.rank = rank;
+				card.suit = suit;
+				card.gameObject.SetActive(false);
+				this.allCards.Add(card);
+			}
+		}
+	}
 
 	private void InitializeEventHandlers() {
-        this.nextRoundButton.onClick.AddListener(() => {
-            this.moveToNextRound = true;
-        });
+		this.nextRoundButton.onClick.AddListener(() => {
+			this.moveToNextRound = true;
+		});
 
-        this.animationSpeedSlider.onValueChanged.AddListener((value) => {
-            Time.timeScale = value;
-        });
-    }
+		this.animationSpeedSlider.onValueChanged.AddListener((value) => {
+			Time.timeScale = value;
+		});
+	}
 
-    private IEnumerator PlayGame() {
-        this.InitializeNewGameState();
-        yield return null;
-        yield return StartCoroutine(this.DealCards());
-        yield return StartCoroutine(this.PlayActualGame());
-    }
+	private IEnumerator PlayGame() {
+		this.InitializeNewGameState();
+		yield return null;
+		yield return StartCoroutine(this.DealCards());
+		yield return StartCoroutine(this.PlayActualGame());
+	}
 
 	private void InitializeNewGameState() {
-        this.state = new GameState();
+		this.state = new GameState();
 
-        for (int i = 0; i < this.playerCount; i++) {
-            var player = new Player();
+		for (int i = 0; i < this.playerCount; i++) {
+			var player = new Player();
 
-            var panel = GameObject.Instantiate(this.playerPanelPrefab, this.playArea);
-            panel.nameLabel.text = i == 0 ? "Player" : "Computer " + i;
-            player.panel = panel;
+			var panel = GameObject.Instantiate(this.playerPanelPrefab, this.playArea);
+			panel.nameLabel.text = i == 0 ? "Player" : "Computer " + i;
+			player.panel = panel;
 
-            this.state.players.Add(player);
-        }
+			this.state.players.Add(player);
+		}
 
-        foreach (var card in this.allCards) {
-            card.power = this.cardPowerOrder.IndexOf(card.rank);
+		foreach (var card in this.allCards) {
+			card.power = this.cardPowerOrder.IndexOf(card.rank);
 		}
 	}
 
 	private IEnumerator DealCards() {
-        var activeCards = this.allCards.Where(c => c.power != -1).ToList();
-        activeCards.Shuffle();
+		var activeCards = this.allCards.Where(c => c.power != -1).ToList();
+		activeCards.Shuffle();
 
-        for (int i = 0; i < activeCards.Count; i++) {
-            var card = activeCards[i];
-            var player = this.state.players[i % this.state.players.Count];
-            player.cards.Enqueue(card);
-            card.transform.localPosition = this.GetPlayerCardPosition(player);
-            card.transform.localRotation = FaceDown;
-            card.gameObject.SetActive(true);
+		for (int i = 0; i < activeCards.Count; i++) {
+			var card = activeCards[i];
+			var player = this.state.players[i % this.state.players.Count];
+			player.cards.Enqueue(card);
+			card.transform.localPosition = this.GetPlayerCardPosition(player);
+			card.transform.localRotation = FaceDown;
+			card.gameObject.SetActive(true);
 		}
 
-        foreach (var player in this.state.players) {
-            player.UpdateCardsCound();
-        }
+		foreach (var player in this.state.players) {
+			player.UpdateCardsCount();
+		}
 
-        yield break; // Method designed for nice animation that will be made later
-    }
+		yield break; // Method designed for nice animation that will be made later
+	}
 
-    private IEnumerator PlayActualGame() {
-        while (this.state.gameWinner == null) {
-            yield return StartCoroutine(this.PlayOneRound());
-            this.DetermineGameWinner();
-        }
-    }
+	private IEnumerator PlayActualGame() {
+		while (this.state.gameWinner == null) {
+			yield return StartCoroutine(this.PlayOneRound());
+			this.DetermineGameWinner();
+		}
+	}
 
 	private IEnumerator WaitForInput() {
-        var autoPlayTime = Time.unscaledTime + this.waitTimeSlider.value;
-        this.moveToNextRound = false;
-        while (this.moveToNextRound == false && (this.autoPlayToggle.isOn == false || Time.unscaledTime < autoPlayTime)) {
-            yield return null;
+		var autoPlayTime = Time.unscaledTime + this.waitTimeSlider.value;
+		this.moveToNextRound = false;
+		while (this.moveToNextRound == false && (this.autoPlayToggle.isOn == false || Time.unscaledTime < autoPlayTime)) {
+			yield return null;
 		}
 	}
 
 	private IEnumerator PlayOneRound() {
-        this.state.currentRoundCardsOffset = 0;
-        this.state.currentRoundCards.Clear();
+		this.state.currentRoundCardsOffset = 0;
+		this.state.currentRoundCards.Clear();
 
-        foreach (var player in this.state.players) {
-            if (player.isActiveInGame == false) {
-                continue;
+		foreach (var player in this.state.players) {
+			if (player.isActiveInGame == false) {
+				continue;
 			}
 
-            player.isActiveInRound = true;
+			player.isActiveInRound = true;
 		}
 
-        int cardsToDraw = 1;
-        do {
-            yield return StartCoroutine(this.DrawCards(cardsToDraw));
-            this.DetermineRoundWinners();
-            cardsToDraw = 3;
-        } while (this.state.currentRoundWinners.Count > 1);
+		int cardsToDrawBase = 1;
+		do {
+			var cardsToDraw = cardsToDrawBase;
+			if (cardsToDrawBase > 1) {
+				var maxRemainingCards = cardsToDrawBase == 1 ? 1 : this.state.players.Where(p => p.isActive).Max(p => p.cards.Count);
+				cardsToDraw = Mathf.Min(maxRemainingCards, cardsToDrawBase);
+			}
+			yield return StartCoroutine(this.DrawCards(cardsToDraw));
+			this.DetermineRoundWinners();
+			cardsToDrawBase = 3;
+		} while (this.state.currentRoundWinners.Count > 1);
 
-        yield return StartCoroutine(this.WaitForInput());
+		yield return StartCoroutine(this.WaitForInput());
 
-        yield return StartCoroutine(this.GiveRoundCardsToPlayer(this.state.currentRoundWinners[0]));
+		yield return StartCoroutine(this.GiveRoundCardsToPlayer(this.state.currentRoundWinners[0]));
 	}
 
 	private void DetermineRoundWinners() {
-        this.state.currentRoundWinners.Clear();
+		this.state.currentRoundWinners.Clear();
 
-        var highestCard = -1;
-        foreach (var player in this.state.players) {
-            if (player.isActive == false) {
-                continue;
+		var highestCard = -1;
+		foreach (var player in this.state.players) {
+			if (player.isActive == false) {
+				continue;
 			}
 
-            var activeCard = player.activeRoundCard;
-            if (player.activeRoundCard.power == highestCard) {
-                this.state.currentRoundWinners.Add(player);
-            }
-            if (player.activeRoundCard.power > highestCard) {
-                this.state.currentRoundWinners.Clear();
-                this.state.currentRoundWinners.Add(player);
-                highestCard = player.activeRoundCard.power;
-            }
-        }
-
-        foreach (var player in this.state.players) {
-            if (player.isActive == false) {
-                continue;
+			var activeCard = player.activeRoundCard;
+			if (player.activeRoundCard.power == highestCard) {
+				this.state.currentRoundWinners.Add(player);
 			}
-
-            if (player.activeRoundCard.power < highestCard) {
-                player.isActiveInRound = false;
+			if (player.activeRoundCard.power > highestCard) {
+				this.state.currentRoundWinners.Clear();
+				this.state.currentRoundWinners.Add(player);
+				highestCard = player.activeRoundCard.power;
 			}
 		}
-    }
 
-    private void DetermineGameWinner() {
-        var activePlayers = 0;
-        Player winner = null;
-        foreach (var player in this.state.players) {
-            if (player.isActiveInGame == false) {
-                continue;
-            }
-
-            if (player.cards.Count == 0) {
-                player.isActiveInGame = false;
-                continue;
+		foreach (var player in this.state.players) {
+			if (player.isActive == false) {
+				continue;
 			}
 
-            winner = player;
-            activePlayers++;
-        }
-
-        if (activePlayers == 1) {
-            this.state.gameWinner = winner;
+			if (player.activeRoundCard.power < highestCard) {
+				player.isActiveInRound = false;
+			}
 		}
-    }
+	}
 
-    private IEnumerator DrawCards(int count) {
-        for (int i = 0; i < count; i++) {
-            foreach (var player in this.state.players) {
-                if (player.isActive == false) {
-                    continue;
+	private void DetermineGameWinner() {
+		var activePlayers = 0;
+		Player winner = null;
+		foreach (var player in this.state.players) {
+			if (player.isActiveInGame == false) {
+				continue;
+			}
+
+			if (player.cards.Count == 0) {
+				player.isActiveInGame = false;
+				continue;
+			}
+
+			winner = player;
+			activePlayers++;
+		}
+
+		if (activePlayers == 1) {
+			this.state.gameWinner = winner;
+		}
+	}
+
+	private IEnumerator DrawCards(int count) {
+		for (int i = 0; i < count; i++) {
+			foreach (var player in this.state.players) {
+				if (player.isActive == false) {
+					continue;
 				}
 
-                var isVisible = i == count - 1 || player.cards.Count == 1;
-                StartCoroutine(this.DrawCard(player, isVisible, out var card));
-                this.state.currentRoundCards.Add(card);
-                if (isVisible) {
-                    player.activeRoundCard = card;
+				if (player.cards.Count == 0) {
+					player.isActiveInRound = false;
+					continue;
 				}
-            }
 
-            this.state.currentRoundCardsOffset++;
+				var isVisible = i == count - 1 || player.cards.Count == 1;
+				StartCoroutine(this.DrawCard(player, isVisible, out var card));
+				this.state.currentRoundCards.Add(card);
+				if (isVisible) {
+					player.activeRoundCard = card;
+				}
+			}
 
-            yield return new WaitForSeconds(this.animationTime);
-        }
+			this.state.currentRoundCardsOffset++;
+
+			yield return new WaitForSeconds(this.animationTime);
+		}
 	}
 
 	private IEnumerator DrawCard(Player player, bool isVisible, out Card card) {
-        card = player.cards.Dequeue();
+		card = player.cards.Dequeue();
 
-        player.UpdateCardsCound();
+		player.UpdateCardsCount();
 
-        var rotation = isVisible ? FaceUp : FaceDown;
-        return this.AnimatePositionAndRotation(card, this.GetPlayerCardPosition(player) + this.GetCardOffset(this.state.currentRoundCardsOffset), rotation, this.animationTime);
+		var rotation = isVisible ? FaceUp : FaceDown;
+		return this.AnimatePositionAndRotation(card, this.GetPlayerCardPosition(player) + this.GetCardOffset(this.state.currentRoundCardsOffset), rotation, this.animationTime);
 	}
 
-    private IEnumerator GiveRoundCardsToPlayer(Player winner) {
-        foreach (var card in this.state.currentRoundCards) {
-            StartCoroutine(this.AnimatePositionAndRotation(card, this.GetPlayerCardPosition(winner), FaceDown, this.animationTime));
-            winner.cards.Enqueue(card);
+	private IEnumerator GiveRoundCardsToPlayer(Player winner) {
+		foreach (var card in this.state.currentRoundCards) {
+			StartCoroutine(this.AnimatePositionAndRotation(card, this.GetPlayerCardPosition(winner), FaceDown, this.animationTime));
+			winner.cards.Enqueue(card);
 		}
-        yield return new WaitForSeconds(this.animationTime);
-    }
+		winner.UpdateCardsCount();
+		yield return new WaitForSeconds(this.animationTime);
+	}
 
-    private IEnumerator AnimatePositionAndRotation(Card card, Vector3 targetPosition, Quaternion targetRotation, float time) {
-        var startPosition = card.transform.localPosition;
-        var startRotation = card.transform.localRotation;
+	private IEnumerator AnimatePositionAndRotation(Card card, Vector3 targetPosition, Quaternion targetRotation, float time) {
+		var startPosition = card.transform.localPosition;
+		var startRotation = card.transform.localRotation;
 
-        yield return StartCoroutine(AnimatePositionAndRotation(card, startPosition, targetPosition, startRotation, targetRotation, time));
-    }
+		yield return StartCoroutine(AnimatePositionAndRotation(card, startPosition, targetPosition, startRotation, targetRotation, time));
+	}
 
-    private IEnumerator AnimatePositionAndRotation(Card card, Vector3 initialPosition, Vector3 targetPosition, Quaternion initialRotaion, Quaternion targetRotation, float time) {
+	private IEnumerator AnimatePositionAndRotation(Card card, Vector3 initialPosition, Vector3 targetPosition, Quaternion initialRotaion, Quaternion targetRotation, float time) {
 		card.transform.localPosition = initialPosition;
 		card.transform.localRotation = initialRotaion;
 
 		var dt = 0f;
-        while (dt < time) {
-            dt += Time.deltaTime;
-            var t = dt / time;
+		while (dt < time) {
+			dt += Time.deltaTime;
+			var t = dt / time;
 			card.transform.localPosition = Vector3.Lerp(initialPosition, targetPosition, t);
 			card.transform.localRotation = Quaternion.Lerp(initialRotaion, targetRotation, t);
 			yield return null;
-        }
-    }
-
-    private Vector3 GetCardOffset(int offsetPositions) {
-        var horizontal = Vector3.right * ((1.3f + offsetPositions * 0.2f) * this.cardWidth);
-        var depth = Vector3.back * (offsetPositions * 0.01f);
-        return horizontal + depth;
-    }
-
-    private void UpdateCardVisuals(Card card) {
-        card.faceImage.sprite = this.GetCardSprite(card.suit, card.rank);
-        card.backImage.sprite = AssetsManager.Instance.GetCardBackSprite();
-    }
-
-    private Sprite GetCardSprite(CardSuit suit, CardRank rank) {
-        return AssetsManager.Instance.GetCardSprite(suit, rank);
+		}
 	}
 
-    private Vector3 GetPlayerCardPosition(Player player) {
-        return player.panel.cardReferencePoint.TransformPointTo(this.playArea, Vector3.zero);
-    }
+	private Vector3 GetCardOffset(int offsetPositions) {
+		var horizontal = Vector3.right * ((1.3f + offsetPositions * 0.2f) * this.cardWidth);
+		var depth = Vector3.back * (offsetPositions * 0.01f);
+		return horizontal + depth;
+	}
 
-    private IEnumerator LoadAsset() {
-        this.loadingAssetsPanel.SetActive(true);
-        
-        yield return StartCoroutine(AssetsManager.Instance.LoadCardsPack(ApplicationSettings.CardFaces));
-        yield return StartCoroutine(AssetsManager.Instance.LoadCardBack(ApplicationSettings.CardBacks));
-        yield return StartCoroutine(AssetsManager.Instance.LoadBackground(ApplicationSettings.Background));
+	private void UpdateCardVisuals(Card card) {
+		card.faceImage.sprite = this.GetCardSprite(card.suit, card.rank);
+		card.backImage.sprite = AssetsManager.Instance.GetCardBackSprite();
+	}
 
-        foreach (var card in this.allCards) {
-            this.UpdateCardVisuals(card);
-        }
+	private Sprite GetCardSprite(CardSuit suit, CardRank rank) {
+		return AssetsManager.Instance.GetCardSprite(suit, rank);
+	}
 
-        this.backgroundImage.sprite = AssetsManager.Instance.GetBackgroundSprite();
+	private Vector3 GetPlayerCardPosition(Player player) {
+		return player.panel.cardReferencePoint.TransformPointTo(this.playArea, Vector3.zero);
+	}
 
-        this.loadingAssetsPanel.SetActive(false);
-    }
+	private IEnumerator LoadAsset() {
+		this.loadingAssetsPanel.SetActive(true);
 
-    private void ApplicationSettings_Changed(object sender, EventArgs e) {
-        this.StartCoroutine(this.LoadAsset());
-    }
+		yield return StartCoroutine(AssetsManager.Instance.LoadCardsPack(ApplicationSettings.CardFaces));
+		yield return StartCoroutine(AssetsManager.Instance.LoadCardBack(ApplicationSettings.CardBacks));
+		yield return StartCoroutine(AssetsManager.Instance.LoadBackground(ApplicationSettings.Background));
+
+		foreach (var card in this.allCards) {
+			this.UpdateCardVisuals(card);
+		}
+
+		this.backgroundImage.sprite = AssetsManager.Instance.GetBackgroundSprite();
+
+		this.loadingAssetsPanel.SetActive(false);
+	}
+
+	private void ApplicationSettings_Changed(object sender, EventArgs e) {
+		this.StartCoroutine(this.LoadAsset());
+	}
 }
-

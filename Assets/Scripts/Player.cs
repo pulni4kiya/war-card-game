@@ -16,7 +16,7 @@ public class Player {
         }
     }
 
-	public void UpdateCardsCound() {
+	public void UpdateCardsCount() {
         this.panel.cardsLabel.text = "Cards: " + this.cards.Count;
     }
 }
